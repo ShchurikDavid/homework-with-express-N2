@@ -1,0 +1,15 @@
+{
+  "name": "home",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --text"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
