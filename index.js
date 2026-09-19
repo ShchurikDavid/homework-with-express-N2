@@ -3,6 +3,8 @@ import moment from 'moment'
 
 const app = express()
 
+app.use(express.json())
+
 const products = [
     { id: 1, name: 'Laptop', price: 1200, category: 'electronics' },
     { id: 2, name: 'Smartphone', price: 800, category: 'electronics' },
@@ -14,20 +16,63 @@ const products = [
 const HOST = 'localhost'
 const PORT = 3000
 
+function addProduct(newProduct, fail = false) {
+    return new Promise((resolve, reject) => {
+        if (fail) {
+            return reject(new Error('Failed to save product'))
+        }
+
+        const product = {
+            name: newProduct.name,
+            price: newProduct.price,
+            category: newProduct.category,
+            image: newProduct.image,
+            id: products.length + 1
+        }
+
+        products.push(product)
+        resolve(product)
+    })
+}
+
+app.post('/products', async (req, res) => {
+    const { name, price, category, image = '' } = req.body ?? {}
+
+    if (
+        typeof name !== 'string' || name.trim() === '' ||
+        typeof price !== 'number' || price <= 0 ||
+        typeof category !== 'string' || category.trim() === ''
+    ) {
+        return res.status(422).json({ message: 'Invalid product data' })
+    }
+
+    if (products.some(product => product.name === name)) {
+        return res.status(409).json({ message: 'Conflict' })
+    }
+
+    try {
+        const product = await addProduct({
+            name,
+            price,
+            category,
+            image
+        }, req.query.fail === 'true')
+
+        return res.status(201).json(product)
+    } catch {
+        return res.status(500).end()
+    }
+})
+
 app.get('/products', (req, res) => {
     const { category, take } = req.query
-
-    // Создаём отдельный массив, не изменяя исходный products
     let result = products
 
-    // Фильтрация по категории
     if (category) {
         result = result.filter(
             p => p.category === category.toLowerCase()
         )
     }
-
-    // Ограничение количества товаров
     if (take) {
         const limit = parseInt(take, 10)
 
@@ -39,8 +84,6 @@ app.get('/products', (req, res) => {
 
         result = result.slice(0, limit)
     }
-
-    // Отправляем результат
     res.status(200).json(result)
 })
 
